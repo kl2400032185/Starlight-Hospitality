@@ -1,0 +1,20 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+### VS Code ###
+.vscode/
+.factorypath
+
+### IntelliJ / Eclipse ###
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+### OS ###
+Thumbs.db
+.DS_Store
+
+### Logs ###
+*.log

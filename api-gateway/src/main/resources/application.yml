@@ -1,0 +1,109 @@
+server:
+  port: ${GATEWAY_PORT:8080}
+
+spring:
+  application:
+    name: API-GATEWAY
+
+  cloud:
+    gateway:
+      # NOTE: Spring Cloud 2025.0 moved the reactive gateway properties from
+      # 'spring.cloud.gateway.*' to 'spring.cloud.gateway.server.webflux.*'.
+      # Using the old prefix here would silently do nothing.
+      server:
+        webflux:
+          # Explicit routes only. Automatic discovery-based routes are disabled so
+          # that the URL contract (/api/**) stays under our control and internal
+          # service names are never exposed as public URLs.
+          discovery:
+            locator:
+              enabled: false
+
+          routes:
+            # ---------- AUTHENTICATION (User Service) ----------
+            # Public endpoints. JWT is issued here in Phase 4.
+            - id: auth-service-route
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/api/auth/**
+
+            # ---------- USER SERVICE ----------
+            - id: user-service-route
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/api/users/**
+
+            # ---------- ROOM SERVICE (properties + rooms) ----------
+            - id: property-service-route
+              uri: lb://ROOM-SERVICE
+              predicates:
+                - Path=/api/properties/**
+
+            - id: room-service-route
+              uri: lb://ROOM-SERVICE
+              predicates:
+                - Path=/api/rooms/**
+
+            # ---------- BOOKING SERVICE ----------
+            - id: booking-service-route
+              uri: lb://BOOKING-SERVICE
+              predicates:
+                - Path=/api/bookings/**
+
+          # Centralised CORS. Configured once here instead of in every microservice.
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                # Explicit development origins. NOT '*', because allow-credentials
+                # is true and the two must never be combined.
+                allowedOrigins:
+                  - "http://localhost:3000"
+                  - "http://localhost:5173"
+                  - "http://localhost:4200"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - Authorization
+                  - Content-Type
+                # Lets the browser read these from the response.
+                exposedHeaders:
+                  - Authorization
+                allowCredentials: true
+                maxAge: 3600
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    # Makes the entry on the Eureka dashboard unambiguous when several
+    # services run on the same machine.
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 'gateway' exposes /actuator/gateway/routes - useful demo evidence
+        # that routes were loaded, without needing the target services running.
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.starlight.gateway: INFO
+    # Shows route matching decisions during development.
+    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.gateway.handler.RoutePredicateHandlerMapping: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"

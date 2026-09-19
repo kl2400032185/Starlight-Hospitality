@@ -1,0 +1,29 @@
+# Maven build output
+**/target/
+target/
+
+# Logs
+*.log
+startup*.log
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Windows local files
+Microsoft/
+Thumbs.db
+.DS_Store
+
+# Local GitHub modernization tooling
+.github/modernize/
+
+# Unrelated folders
+microservice-communication-and-testing/
+microservices-deployment-and-verification/
+
+# Secrets / environment files
+.env
+*.env
+application-local.properties
